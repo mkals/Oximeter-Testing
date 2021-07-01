@@ -20,6 +20,7 @@ c = threading.Condition() # for synchronizing access to active_ports
 active_ports = []
 threads = []
 
+
 def generate_file(port):
 	# Find log-file path
 	if platform.system() == 'Linux':
