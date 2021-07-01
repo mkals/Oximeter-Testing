@@ -648,16 +648,18 @@ if __name__ == '__main__':
     # p2 = Sp.SyringePump(ports_in_use[-1], '20mL', '20mL')
 
     ports_in_use.append(MKUsbLocator.ask_user(ports_in_use))
-    sensors.append(CASerialSensor(title='bath',
-                                  port=ports_in_use[-1],
-                                  baud=19200,
-                                  header_string=PULSE_OXIMETER_HEADER_STRING))
+    bath = CASerialSensor(title='bath',
+                          port=ports_in_use[-1],
+                          baud=19200,
+                          header_string=PULSE_OXIMETER_HEADER_STRING)
+    sensors.append(bath)
 
     ports_in_use.append(MKUsbLocator.ask_user(ports_in_use))
-    sensors.append(CASerialSensor(title='pressure',
-                                  port=ports_in_use[-1],
-                                  baud=115200,
-                                  header_string='p(atm)'))
+    p = CASerialSensor(title='pressure',
+                       port=ports_in_use[-1],
+                       baud=115200,
+                       header_string='p')
+    sensors.append(p)
 
     # p1.wait_til_ready()
     # time.sleep(10)
@@ -710,6 +712,7 @@ if __name__ == '__main__':
     # pulse_step(p1, p2, step_volume=0.1, step_frequency=1, pulse_dc=0.5, start_dc=0, end_dc=1, dc_count=6)
     # pulse_step_backstep(p1, p2, step_volume=0.1, step_frequency=1, dc_count=6, backstep=0.5)
     # step_in_place(p1, step_volume=0.5, t_fractions=t_s, a_fractions=a_s, step_frequency=1, step_count=60)
+    # step_in_place(p1, step_volume=0.1, t_fractions=t_s, a_fractions=a_s, step_frequency=1, step_count=10)
 '''
 Frequency:
 1 -> 0.9
