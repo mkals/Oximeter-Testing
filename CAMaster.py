@@ -1,5 +1,6 @@
 
 
+from typing_extensions import ParamSpec
 import matplotlib.pyplot as plt
 from operator import pos, truth
 import threading
@@ -107,6 +108,11 @@ def generate_file():
     return file
 
 
+def write_text_to_file(filename, text):
+    with open(filename, 'w') as f:
+        f.write(text)
+
+
 def write_metadata(name, sim_string):
     questions = [
         'Errors',
@@ -132,9 +138,9 @@ def write_metadata(name, sim_string):
 
 def write_to_file(sim_string):
     name = generate_file()
-    df.to_csv(name)
+    # df.to_csv(name)
 
-    print(Cam.directory)
+    # print(Cam.directory)
     if collect_metadata:
         write_metadata(name, sim_string)
 
@@ -164,7 +170,17 @@ def end_round(message):
     p1.speed_mode = False
 
     for s in sensors:  # stops all async threads
-        s.end()
+        filename = s.end()
+
+        if filename and 'bath' in filename:
+            ox = float(input('SpO2 (mmHg) = '))
+            spo2 = Oxy.severinghaus(ox)
+            print(f'SpO2 (%)    = {spo2:.1f}')
+
+            params = s.bath_compute_putput_parameters()
+            data = [ox, spo2] + params
+            line = ', '.join([f'{d:.1f}' for d in data])
+            write_text_to_file(filename + 'meta.txt', line)
 
         # if s.title == 'bath':
         #     plot_bath_summary(s.data_frame)
@@ -234,7 +250,7 @@ def alternate(p, step_volume, duty_cycle, step_frequency, steps=-1):
 
         steps -= 1  # decrement steps
 
-        print_frequency()
+        # print_frequency()
 
     p.x.position = x_pos
     p.y.position = y_pos
@@ -405,8 +421,8 @@ def step_in_place(p1, step_volume, t_fractions, a_fractions, step_frequency=1, s
         max(t_fractions)  # normalize to sum to 1
     a_fractions = np.array(a_fractions) / max(a_fractions)  # normalize to 1
 
-    print(t_fractions)
-    print(a_fractions)
+    print(f'{t_fractions=}')
+    print(f'{a_fractions=}')
 
     x_pos = p1.x_stage.position
 
@@ -437,13 +453,13 @@ def step_in_place(p1, step_volume, t_fractions, a_fractions, step_frequency=1, s
         for i, a in enumerate(p1_output):
 
             p1.execute_command(a)
-            print(a)
+            # print(a)
 
             # manually sync time once for every step
             if i % cycle_length == 0:
                 delta = (ta + 1/step_frequency) - time.time()
                 time.sleep(max(0, delta))
-                print(f'{delta}', end='\t')
+                # print(f'{delta}', end='\t')
                 print_frequency()
                 ta = time.time()
 
@@ -715,7 +731,7 @@ if __name__ == '__main__':
     # pulse_step(p1, p2, step_volume=0.1, step_frequency=1, pulse_dc=0.5, start_dc=0, end_dc=1, dc_count=6)
     # pulse_step_backstep(p1, p2, step_volume=0.1, step_frequency=1, dc_count=6, backstep=0.5)
     # step_in_place(p1, step_volume=0.5, t_fractions=t_s, a_fractions=a_s, step_frequency=1, step_count=60)
-    # step_in_place(p1, step_volume=0.1, t_fractions=t_s, a_fractions=a_s, step_frequency=1, step_count=10)
+    # step_in_place(p1, step_volume=0.1, t_fractions=t_s, a_fractions=a_s, step_frequency=1, step_count=40)
 '''
 Frequency:
 1 -> 0.9

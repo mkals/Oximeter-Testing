@@ -67,6 +67,7 @@ class CASerialSensor:
 
         # clean buffers
         self._ser = serial.Serial(self.port, self.baud, timeout=600)
+        time.sleep(0.1)
         self._ser.flushInput()
 
         self._looping = True
@@ -80,6 +81,7 @@ class CASerialSensor:
         if save:
             name = self.generate_filename()
             self.data_frame.to_csv(name)
+            return name
 
     # private methods
 
@@ -101,6 +103,34 @@ class CASerialSensor:
         directory = 'Data/Logs'
 
         return os.path.join(directory, filename)
+
+    def bath_compute_putput_parameters(self):
+
+        df = self.data_frame
+
+        period = 2
+        mesurement_interval = (
+            float(df.index[-1]) - float(df.index[0])) / df.shape[0]
+        point_count = int(period / mesurement_interval)
+
+        # times = map_reduce(df['utc_time'], point_count, np.mean)
+        dc_r = map_reduce(df.r, point_count, np.mean)
+        dc_i = map_reduce(df.i, point_count, np.mean)
+        ac_r = map_reduce(df.r, point_count, (lambda x: max(x) - min(x)))
+        ac_i = map_reduce(df.i, point_count, (lambda x: max(x) - min(x)))
+
+        dc_r_mean = np.mean(dc_r)
+        dc_i_mean = np.mean(dc_i)
+        ac_r_mean = np.mean(ac_r)
+        ac_i_mean = np.mean(ac_i)
+
+        print(f'DC Red = {dc_r_mean:.0f}')
+        print(f'DC IR  = {dc_i_mean:.0f}')
+        print(f'AC Red = {ac_r_mean:.0f}')
+        print(f'AC IR  = {ac_i_mean:.0f}')
+
+        return [dc_r_mean, dc_i_mean, ac_r_mean, ac_i_mean]
+        '{dc_r_mean:.0f}, {dc_i_mean:.0f}, {ac_r_mean:.0f}, {ac_i_mean:.0f}'
 
     def plot(self):  # Function to create the base plot, make sure to make global the lines, axes, canvas and any part that you would want to update later
         self.fig = plt.figure()
