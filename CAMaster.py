@@ -16,7 +16,7 @@ import time
 
 import CASyringePump as Sp
 import CAOxymeter as Oxy
-from CASerialSensor import CASerialSensor
+from CASerialSensor import CASerialSensor, plot_bath_summary
 import CABasler as Cam
 import MKUsbLocator
 
@@ -166,6 +166,9 @@ def end_round(message):
     for s in sensors:  # stops all async threads
         s.end()
 
+        # if s.title == 'bath':
+        #     plot_bath_summary(s.data_frame)
+
     # global stop, oxy_threads, df
 
     # if sense:
@@ -178,8 +181,8 @@ def end_round(message):
     #     write_to_file(message)
 
     #     df['timestamp'] = pd.to_datetime(df['time'], unit='s')
-    #     df['so2_1'] = df['p1'].apply(Oxy.severinghoouse)
-    #     df['so2_2'] = df['p2'].apply(Oxy.severinghoouse)
+    #     df['so2_1'] = df['p1'].apply(Oxy.severinghaus)
+    #     df['so2_2'] = df['p2'].apply(Oxy.severinghaus)
 
 
 t0 = time.time()

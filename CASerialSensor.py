@@ -1,5 +1,6 @@
 #!/usr/bin/python
 
+import numpy as np
 import tkinter as tk
 import os
 import time
@@ -7,11 +8,13 @@ import serial
 import pandas as pd
 import threading
 
-import matplotlib as plt
+import matplotlib as mplt
+import matplotlib.pyplot as plt
+
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 import multiprocessing
 import random
-plt.use('TkAgg')
+mplt.use('TkAgg')
 
 
 class CASerialSensor:
@@ -63,8 +66,7 @@ class CASerialSensor:
         self.data_frame.index.name = 'utc_time'
 
         # clean buffers
-        self._ser.close()
-        self._ser.open()
+        self._ser = serial.Serial(self.port, self.baud, timeout=600)
         self._ser.flushInput()
 
         self._looping = True
@@ -101,7 +103,7 @@ class CASerialSensor:
         return os.path.join(directory, filename)
 
     def plot(self):  # Function to create the base plot, make sure to make global the lines, axes, canvas and any part that you would want to update later
-        self.fig = plt.figure.Figure()
+        self.fig = plt.figure()
         self.ax = self.fig.add_subplot(1, 1, 1)
         self.canvas = FigureCanvasTkAgg(self.fig, master=self.window)
         self.canvas.draw()
@@ -141,7 +143,68 @@ class CASerialSensor:
 PULSE_OXIMETER_HEADER_STRING = 'red,beat_red,pulse_red,pulse_red_threshold,red_sig,ir_sig,r,i,SPO2,beatAvg,rollHrAvg,SPO2Avg'
 
 
+def map_reduce(data, splits, func):
+    data = list(data)
+    return [func(data[i:i + splits]) for i in range(len(data) - splits + 1)]
+
+
+def plot_bath_summary(df):
+
+    period = 2
+    mesurement_interval = (
+        df.utc_time.iloc[-1] - df.utc_time.iloc[0]) / df.shape[0]
+    point_count = int(period / mesurement_interval)
+
+    times = map_reduce(df['utc_time'], point_count, np.mean)
+    dc_r = map_reduce(df.r, point_count, np.mean)
+    dc_i = map_reduce(df.i, point_count, np.mean)
+    ac_r = map_reduce(df.r, point_count, (lambda x: max(x) - min(x)))
+    ac_i = map_reduce(df.i, point_count, (lambda x: max(x) - min(x)))
+
+    dc_r_mean = np.mean(dc_r)
+    dc_i_mean = np.mean(dc_i)
+    ac_r_mean = np.mean(ac_r)
+    ac_i_mean = np.mean(ac_i)
+
+    print(f'DC Red = {dc_r_mean:.0f}')
+    print(f'DC IR  = {dc_i_mean:.0f}')
+    print(f'AC Red = {ac_r_mean:.0f}')
+    print(f'AC IR  = {ac_i_mean:.0f}')
+
+    f, (ax1, ax2) = plt.subplots(1, 2)  # , sharey=True)
+
+    # DC PLOT
+    ax1.plot(df.utc_time, df.r)
+    ax1.plot(df.utc_time, df.i)
+    ax1.plot(times, dc_r, '-')
+    ax1.plot(times, dc_i, '-')
+    ax1.axhline(dc_r_mean)
+    ax1.axhline(dc_i_mean)
+
+    ax1.set_title('DC Bath Data')
+    ax1.set_xlabel('Time')
+    ax1.set_ylabel('Signal')
+    ax1.legend(['r', 'i', 'r ra', 'i ra', 'r mean', 'i mean'])
+
+    # AC PLOT
+    ax2.plot(times, ac_r)
+    ax2.plot(times, ac_i)
+    ax2.axhline(ac_r_mean)
+    ax2.axhline(ac_i_mean)
+
+    ax2.set_title('AC')
+    ax2.set_xlabel('Time')
+    ax2.set_ylabel('Signal')
+    ax2.legend(['r', 'i', 'r mean', 'i mean'])
+
+    plt.show()
+
+
 if __name__ == '__main__':
+    # df = pd.read_csv(
+    #     '/Users/mkals/Developer/Cambridge/Oximeter Testing/Data/Logs/bath_20210701_1141_mo_r2_g.csv')
+    # plot_bath_summary(df)
+
     import MKUsbLocator
     port = MKUsbLocator.ask_user()
     po = CASerialSensor(title='bath',
@@ -150,10 +213,19 @@ if __name__ == '__main__':
                         header_string=PULSE_OXIMETER_HEADER_STRING,
                         plotting=False)
 
-    print(po.read())
+    _ = po.read()
 
     print('Data collection')
     po.start()
-    time.sleep(60)
+    time.sleep(1)
     po.end()
-    print(po.data_frame)
+
+    df = po.data_frame
+    # plt.figure()
+    # plt.plot(df.index, df.r)
+    # plt.plot(df.index, df.i)
+    # plt.show()
+
+    print(f'Mean Red = {np.mean(df.r):.0f}')
+    print(f'Mean IR  = {np.mean(df.i):.0f}')
+    print(f'{np.mean(df.r):.0f},{np.mean(df.i):.0f}')

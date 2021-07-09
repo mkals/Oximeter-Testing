@@ -28,7 +28,7 @@ def readVoltage(pin):
     return board.analogRead(pin) / 2**10 * 5
 
 
-def severinghoouse(x):
+def severinghaus(x):
     if x == 0:
         return 0
     return ((((x**3+150*x)**-1 * 23400)+1)**-1) * 100
@@ -36,11 +36,11 @@ def severinghoouse(x):
 
 def read():
     mmhg1 = (readVoltage(A4)/5)*200
-    #so1 = severinghoouse(mmhg1)
+    #so1 = severinghaus(mmhg1)
     #temp1 = (readVoltage(A3)/5)*50
 
     mmhg2 = (readVoltage(A2)/5)*200
-    #so2 = severinghoouse(mmhg2)
+    #so2 = severinghaus(mmhg2)
     #temp2 = (readVoltage(A1)/5)*50
 
     return (mmhg1, mmhg2)
