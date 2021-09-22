@@ -1,0 +1,3 @@
+[submodule "arduinocode"]
+	path = arduinocode
+	url = https://gitlab.com/openoximeter/arduinocode.git
